@@ -1,7 +1,9 @@
 // Central location for all API-related constants.
 // Never repeat these values inline — always import from here.
 
-export const API_BASE_URL = 'http://localhost:8080';
+// Relative base path — Nginx proxies /api/* to the back-end container.
+// Using a relative URL means this works on any domain without reconfiguring.
+export const API_BASE_URL = '/api';
 
 // Prepend this to any Actor.profilePath value to get a displayable image URL
 export const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w185';
