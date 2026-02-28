@@ -13,15 +13,19 @@ import type { Actor, Movie, GameState, ValidateStepResponse } from '../types';
 type GamePageProps = {
   gameState: GameState;
   onStepAccepted: (nextActor: Actor, connectingMovie: Movie) => void;
+  onResetChain: () => void;
+  onGiveUp: () => void;
 };
 
-export function GamePage({ gameState, onStepAccepted }: GamePageProps) {
+export function GamePage({ gameState, onStepAccepted, onResetChain, onGiveUp }: GamePageProps) {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-xl mx-auto flex flex-col gap-6">
         <GameHeader
           startActor={gameState.startActor}
           targetActor={gameState.targetActor}
+          onResetChain={onResetChain}
+          onGiveUp={onGiveUp}
         />
 
         <ChainDisplay
@@ -44,14 +48,34 @@ export function GamePage({ gameState, onStepAccepted }: GamePageProps) {
 type GameHeaderProps = {
   startActor: Actor;
   targetActor: Actor;
+  onResetChain: () => void;
+  onGiveUp: () => void;
 };
 
-function GameHeader({ startActor, targetActor }: GameHeaderProps) {
+function GameHeader({ startActor, targetActor, onResetChain, onGiveUp }: GameHeaderProps) {
   return (
-    <div className="flex items-center justify-between gap-4 bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-      <ActorCard actor={startActor} />
-      <span className="text-2xl text-gray-400">→</span>
-      <ActorCard actor={targetActor} />
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="flex items-center justify-between gap-4 p-4">
+        <ActorCard actor={startActor} />
+        <span className="text-2xl text-gray-400">→</span>
+        <ActorCard actor={targetActor} />
+      </div>
+      <div className="flex border-t border-gray-100 divide-x divide-gray-100">
+        <button
+          type="button"
+          onClick={onResetChain}
+          className="flex-1 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-colors"
+        >
+          ↺ Reset chain
+        </button>
+        <button
+          type="button"
+          onClick={onGiveUp}
+          className="flex-1 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-red-500 transition-colors"
+        >
+          ← New game
+        </button>
+      </div>
     </div>
   );
 }

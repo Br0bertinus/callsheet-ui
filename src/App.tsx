@@ -8,7 +8,7 @@ import type { Actor, Movie, NewGameResponse } from './types';
 // App is the top-level router between the three game screens.
 // All game state lives in useGameState — this component only wires transitions.
 export function App() {
-  const { gameState, hasWon, initializeGame, addStepToChain, resetGame } = useGameState();
+  const { gameState, hasWon, initializeGame, addStepToChain, resetChain, resetGame } = useGameState();
 
   const handleGameStarted = useCallback(
     (data: NewGameResponse) => {
@@ -32,5 +32,5 @@ export function App() {
     return <WinPage gameState={gameState} onPlayAgain={resetGame} />;
   }
 
-  return <GamePage gameState={gameState} onStepAccepted={handleStepAccepted} />;
+  return <GamePage gameState={gameState} onStepAccepted={handleStepAccepted} onResetChain={resetChain} onGiveUp={resetGame} />;
 }

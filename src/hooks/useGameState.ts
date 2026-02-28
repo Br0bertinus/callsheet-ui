@@ -6,6 +6,7 @@ type UseGameStateResult = {
   hasWon: boolean;
   initializeGame: (startActor: Actor, targetActor: Actor) => void;
   addStepToChain: (nextActor: Actor, connectingMovie: Movie) => void;
+  resetChain: () => void;
   resetGame: () => void;
 };
 
@@ -48,6 +49,19 @@ export function useGameState(): UseGameStateResult {
     });
   }, []);
 
+  const resetChain = useCallback(() => {
+    setGameState((prev) => {
+      if (prev === null) return null;
+      return {
+        ...prev,
+        currentActor: prev.startActor,
+        chain: [],
+        visitedActorIds: [prev.startActor.id],
+        visitedMovieIds: [],
+      };
+    });
+  }, []);
+
   const resetGame = useCallback(() => {
     setGameState(null);
   }, []);
@@ -57,6 +71,7 @@ export function useGameState(): UseGameStateResult {
     hasWon,
     initializeGame,
     addStepToChain,
+    resetChain,
     resetGame,
   };
 }
