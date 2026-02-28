@@ -12,6 +12,8 @@ export type Movie = {
   id: number;
   title: string;
   year: number;
+  // Partial TMDB path — prepend TMDB_POSTER_BASE_URL to display the poster
+  posterPath?: string;
 };
 
 // Response from POST /game
