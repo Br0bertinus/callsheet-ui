@@ -8,6 +8,9 @@ export const API_BASE_URL = '/api';
 // Prepend this to any Actor.profilePath value to get a displayable image URL
 export const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w185';
 
+// Prepend this to any Movie.posterPath value to get a displayable poster URL
+export const TMDB_POSTER_BASE_URL = 'https://image.tmdb.org/t/p/w92';
+
 // Minimum characters required before a search query is fired
 export const SEARCH_MIN_LENGTH = 2;
 
