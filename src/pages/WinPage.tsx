@@ -45,22 +45,26 @@ function WinHeader({ stepCount }: { stepCount: number }) {
 }
 
 function CompletedChain({ gameState }: { gameState: GameState }) {
+  const { startActor, targetActor, chain } = gameState;
+
   return (
     <div className="flex flex-col items-center gap-2">
-      <ActorCard actor={gameState.startActor} />
+      <ActorCard actor={startActor} />
 
-      {gameState.chain.map((step) => (
-        <div key={step.movie.id} className="flex flex-col items-center gap-2">
-          <div className="w-0.5 h-4 bg-gray-300 rounded" aria-hidden="true" />
-          <MovieBadge movie={step.movie} />
-          <div className="w-0.5 h-4 bg-gray-300 rounded" aria-hidden="true" />
-          <ActorCard actor={step.actor} />
-        </div>
-      ))}
-
-      {/* The final actor is the target actor (chain ends here) */}
-      <div className="w-0.5 h-4 bg-gray-300 rounded" aria-hidden="true" />
-      <ActorCard actor={gameState.targetActor} isHighlighted />
+      {chain.map((step, index) => {
+        const isLast = index === chain.length - 1;
+        // Each ChainStep stores the FROM actor; the TO actor is the next step's
+        // FROM actor, or the targetActor for the final step.
+        const toActor = isLast ? targetActor : chain[index + 1].actor;
+        return (
+          <div key={step.movie.id} className="flex flex-col items-center gap-2">
+            <div className="w-0.5 h-4 bg-gray-300 rounded" aria-hidden="true" />
+            <MovieBadge movie={step.movie} />
+            <div className="w-0.5 h-4 bg-gray-300 rounded" aria-hidden="true" />
+            <ActorCard actor={toActor} isHighlighted={isLast} />
+          </div>
+        );
+      })}
     </div>
   );
 }
