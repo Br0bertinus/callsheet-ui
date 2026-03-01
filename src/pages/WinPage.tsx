@@ -15,9 +15,9 @@ function buildShareUrl(gameState: GameState): string {
   return `${window.location.origin}${window.location.pathname}?${params}`;
 }
 
-function buildShareText(gameState: GameState, url: string): string {
+function buildShareText(gameState: GameState): string {
   const steps = gameState.chain.length;
-  return `I connected ${gameState.startActor.name} → ${gameState.targetActor.name} in ${steps} ${steps === 1 ? 'step' : 'steps'}! Can you beat me? 🎬\n${url}`;
+  return `I connected ${gameState.startActor.name} → ${gameState.targetActor.name} in ${steps} ${steps === 1 ? 'step' : 'steps'}! Can you beat me? 🎬`;
 }
 
 function ShareButton({ gameState }: { gameState: GameState }) {
@@ -25,18 +25,19 @@ function ShareButton({ gameState }: { gameState: GameState }) {
 
   async function handleShare() {
     const url = buildShareUrl(gameState);
-    const text = buildShareText(gameState, url);
+    const message = buildShareText(gameState);
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Callsheet Challenge', text, url });
+        // Pass text and url separately so the OS doesn't duplicate the link.
+        await navigator.share({ title: 'Callsheet Challenge', text: message, url });
         return;
       } catch {
         // User cancelled or Web Share API unavailable — fall through to clipboard.
       }
     }
 
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(`${message}\n${url}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -47,7 +48,7 @@ function ShareButton({ gameState }: { gameState: GameState }) {
       onClick={handleShare}
       className="w-full py-3 px-6 rounded-xl bg-white text-indigo-600 font-semibold text-lg border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 active:scale-95 transition-all shadow-sm"
     >
-      {copied ? '✅ Copied to clipboard!' : '� Challenge a Friend'}
+      {copied ? '✅ Copied to clipboard!' : '💪 Challenge a Friend'}
     </button>
   );
 }
