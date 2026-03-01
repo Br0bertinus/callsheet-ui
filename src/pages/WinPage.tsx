@@ -1,6 +1,56 @@
+import { useState } from 'react';
 import { ActorCard } from '../components/ActorCard';
 import { MovieBadge } from '../components/MovieBadge';
 import type { GameState } from '../types';
+
+// ---------------------------------------------------------------------------
+// Share helpers
+// ---------------------------------------------------------------------------
+
+function buildShareUrl(gameState: GameState): string {
+  const params = new URLSearchParams({
+    startActorId: String(gameState.startActor.id),
+    targetActorId: String(gameState.targetActor.id),
+  });
+  return `${window.location.origin}${window.location.pathname}?${params}`;
+}
+
+function buildShareText(gameState: GameState, url: string): string {
+  const steps = gameState.chain.length;
+  return `I connected ${gameState.startActor.name} → ${gameState.targetActor.name} in ${steps} ${steps === 1 ? 'step' : 'steps'}! Can you beat me? 🎬\n${url}`;
+}
+
+function ShareButton({ gameState }: { gameState: GameState }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleShare() {
+    const url = buildShareUrl(gameState);
+    const text = buildShareText(gameState, url);
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Callsheet Challenge', text, url });
+        return;
+      } catch {
+        // User cancelled or Web Share API unavailable — fall through to clipboard.
+      }
+    }
+
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleShare}
+      className="w-full py-3 px-6 rounded-xl bg-white text-indigo-600 font-semibold text-lg border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 active:scale-95 transition-all shadow-sm"
+    >
+      {copied ? '✅ Copied to clipboard!' : '� Challenge a Friend'}
+    </button>
+  );
+}
 
 type WinPageProps = {
   gameState: GameState;
@@ -16,6 +66,7 @@ export function WinPage({ gameState, onPlayAgain }: WinPageProps) {
         <Confetti />
         <WinHeader stepCount={stepCount} />
         <CompletedChain gameState={gameState} />
+        <ShareButton gameState={gameState} />
         <button
           type="button"
           onClick={onPlayAgain}
