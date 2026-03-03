@@ -1,6 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
 import { validateStep } from '../api/game';
-import type { ValidateStepResponse } from '../types';
 
 type ValidateStepArgs = {
   currentActorId: number;
