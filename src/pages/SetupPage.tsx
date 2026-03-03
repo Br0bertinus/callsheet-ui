@@ -8,7 +8,7 @@ import { SearchInput } from '../components/SearchInput';
 import { ActorCard } from '../components/ActorCard';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TmdbLogo } from '../components/TmdbLogo';
-import { TMDB_IMAGE_BASE_URL } from '../api/constants';
+import { getProfileImageUrl } from '../api/constants';
 import type { Actor } from '../types';
 
 export function SetupPage() {
@@ -55,10 +55,7 @@ export function SetupPage() {
   const { actorResults: targetActorResults, isLoadingActorSearch: isLoadingTargetSearch, actorSearchError: targetSearchError } =
     useActorSearch(targetActorQuery);
 
-  const { submitNewGame, isStartingGame, newGameError } = useNewGame((data) => {
-    initializeGame(data.startActor, data.targetActor);
-    navigate('/game');
-  });
+  const { submitNewGame, isStartingGame, newGameError } = useNewGame();
 
   const handleStartActorQueryChange = useCallback((query: string) => {
     setStartActorQuery(query);
@@ -70,7 +67,15 @@ export function SetupPage() {
 
   function handleStartGameClick() {
     if (startActor && targetActor) {
-      submitNewGame({ startActorId: startActor.id, targetActorId: targetActor.id });
+      submitNewGame(
+        { startActorId: startActor.id, targetActorId: targetActor.id },
+        {
+          onSuccess: (data) => {
+            initializeGame(data.startActor, data.targetActor);
+            navigate('/game');
+          },
+        },
+      );
     }
   }
 
@@ -250,15 +255,11 @@ function SetupActorPicker({
   onActorSelect,
   onActorClear,
 }: SetupActorPickerProps) {
-  // resetKey forces the SearchInput to clear its internal input value
-  const [resetKey, setResetKey] = useState(0);
-
   function handleActorSelect(actor: Actor) {
     onActorSelect(actor);
   }
 
   function handleClear() {
-    setResetKey((k) => k + 1);
     onActorClear();
   }
 
@@ -290,7 +291,6 @@ function SetupActorPicker({
             <ActorSearchResult actor={actor} />
           )}
           onResultSelect={handleActorSelect}
-          resetKey={resetKey}
         />
       )}
 
@@ -300,9 +300,7 @@ function SetupActorPicker({
 }
 
 function ActorSearchResult({ actor }: { actor: Actor }) {
-  const imageUrl = actor.profilePath
-    ? `${TMDB_IMAGE_BASE_URL}${actor.profilePath}`
-    : null;
+  const imageUrl = getProfileImageUrl(actor.profilePath);
 
   return (
     <div className="flex items-center gap-3 py-1">

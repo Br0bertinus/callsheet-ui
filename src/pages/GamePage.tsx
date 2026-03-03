@@ -9,7 +9,7 @@ import { ActorCard } from '../components/ActorCard';
 import { MovieBadge } from '../components/MovieBadge';
 import { SearchInput } from '../components/SearchInput';
 import { ErrorMessage } from '../components/ErrorMessage';
-import { TMDB_IMAGE_BASE_URL } from '../api/constants';
+import { getProfileImageUrl } from '../api/constants';
 import type { Actor, Movie, GameState, ValidateStepResponse } from '../types';
 
 export function GamePage() {
@@ -96,9 +96,6 @@ type StepBuilderProps = {
 function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
   const [nextActor, setNextActor] = useState<Actor | null>(null);
   const [connectingMovie, setConnectingMovie] = useState<Movie | null>(null);
-  const [actorResetKey, setActorResetKey] = useState(0);
-  const [movieResetKey, setMovieResetKey] = useState(0);
-
   const [actorQuery, setActorQuery] = useState('');
   const [movieQuery, setMovieQuery] = useState('');
 
@@ -115,8 +112,6 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
       // Clear step builder for the next step
       setNextActor(null);
       setConnectingMovie(null);
-      setActorResetKey((k) => k + 1);
-      setMovieResetKey((k) => k + 1);
       setSuggestedMovies([]);
       setInvalidStepMessage(null);
     } else {
@@ -127,7 +122,7 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
   }
 
   const { submitStep, isValidatingStep, validateStepError, resetValidateStep } =
-    useValidateStep(handleValidateStepSuccess);
+    useValidateStep();
 
   const handleActorQueryChange = useCallback((query: string) => {
     setActorQuery(query);
@@ -153,12 +148,10 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
 
   function handleClearActor() {
     setNextActor(null);
-    setActorResetKey((k) => k + 1);
   }
 
   function handleClearMovie() {
     setConnectingMovie(null);
-    setMovieResetKey((k) => k + 1);
   }
 
   function handleSubmitStep() {
@@ -178,13 +171,16 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
       return;
     }
 
-    submitStep({
-      currentActorId: gameState.currentActor.id,
-      nextActorId: nextActor.id,
-      movieId: connectingMovie.id,
-      visitedActorIds,
-      visitedMovieIds,
-    });
+    submitStep(
+      {
+        currentActorId: gameState.currentActor.id,
+        nextActorId: nextActor.id,
+        movieId: connectingMovie.id,
+        visitedActorIds,
+        visitedMovieIds,
+      },
+      { onSuccess: handleValidateStepSuccess },
+    );
   }
 
   const bothSelectionsMade = nextActor !== null && connectingMovie !== null;
@@ -201,7 +197,6 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
         isLoading={isLoadingActorSearch}
         searchError={actorSearchError}
         selectedActor={nextActor}
-        resetKey={actorResetKey}
         onQueryChange={handleActorQueryChange}
         onActorSelect={handleActorSelect}
         onActorClear={handleClearActor}
@@ -212,7 +207,6 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
         isLoading={isLoadingMovieSearch}
         searchError={movieSearchError}
         selectedMovie={connectingMovie}
-        resetKey={movieResetKey}
         onQueryChange={handleMovieQueryChange}
         onMovieSelect={handleMovieSelect}
         onMovieClear={handleClearMovie}
@@ -248,7 +242,6 @@ type StepActorPickerProps = {
   isLoading: boolean;
   searchError: Error | null;
   selectedActor: Actor | null;
-  resetKey: number;
   onQueryChange: (query: string) => void;
   onActorSelect: (actor: Actor) => void;
   onActorClear: () => void;
@@ -259,7 +252,6 @@ function StepActorPicker({
   isLoading,
   searchError,
   selectedActor,
-  resetKey,
   onQueryChange,
   onActorSelect,
   onActorClear,
@@ -289,7 +281,6 @@ function StepActorPicker({
           isLoading={isLoading}
           renderResult={(actor) => <ActorSearchResult actor={actor} />}
           onResultSelect={onActorSelect}
-          resetKey={resetKey}
         />
       )}
       {searchError && <ErrorMessage message={searchError.message} />}
@@ -302,7 +293,6 @@ type StepMoviePickerProps = {
   isLoading: boolean;
   searchError: Error | null;
   selectedMovie: Movie | null;
-  resetKey: number;
   onQueryChange: (query: string) => void;
   onMovieSelect: (movie: Movie) => void;
   onMovieClear: () => void;
@@ -313,7 +303,6 @@ function StepMoviePicker({
   isLoading,
   searchError,
   selectedMovie,
-  resetKey,
   onQueryChange,
   onMovieSelect,
   onMovieClear,
@@ -348,7 +337,6 @@ function StepMoviePicker({
             </span>
           )}
           onResultSelect={onMovieSelect}
-          resetKey={resetKey}
         />
       )}
       {searchError && <ErrorMessage message={searchError.message} />}
@@ -357,9 +345,7 @@ function StepMoviePicker({
 }
 
 function ActorSearchResult({ actor }: { actor: Actor }) {
-  const imageUrl = actor.profilePath
-    ? `${TMDB_IMAGE_BASE_URL}${actor.profilePath}`
-    : null;
+  const imageUrl = getProfileImageUrl(actor.profilePath);
 
   return (
     <div className="flex items-center gap-3 py-1">

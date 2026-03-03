@@ -8,8 +8,6 @@ type SearchInputProps<TResult> = {
   isLoading: boolean;
   renderResult: (result: TResult) => React.ReactNode;
   onResultSelect: (result: TResult) => void;
-  // Used to reset the input when a selection is cleared externally
-  resetKey?: number;
 };
 
 // A debounced search input with a dropdown results list.
@@ -22,17 +20,10 @@ export function SearchInput<TResult extends { id: number }>({
   isLoading,
   renderResult,
   onResultSelect,
-  resetKey,
 }: SearchInputProps<TResult>) {
   const [inputValue, setInputValue] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Reset the input whenever the parent signals a fresh start
-  useEffect(() => {
-    setInputValue('');
-    setIsDropdownOpen(false);
-  }, [resetKey]);
 
   // Debounce: wait for the user to stop typing before firing the query
   useEffect(() => {

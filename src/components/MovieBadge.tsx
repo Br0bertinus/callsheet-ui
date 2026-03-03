@@ -1,4 +1,4 @@
-import { TMDB_POSTER_BASE_URL } from '../api/constants';
+import { getPosterUrl } from '../api/constants';
 import type { Movie } from '../types';
 
 type MovieBadgeProps = {
@@ -6,9 +6,7 @@ type MovieBadgeProps = {
 };
 
 function MoviePoster({ movie }: { movie: Movie }) {
-  const posterUrl = movie.posterPath
-    ? `${TMDB_POSTER_BASE_URL}${movie.posterPath}`
-    : null;
+  const posterUrl = getPosterUrl(movie.posterPath);
 
   if (posterUrl) {
     return (

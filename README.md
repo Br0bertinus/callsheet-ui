@@ -56,12 +56,12 @@ The codebase is organised around a strict separation of concerns. Each layer has
 ```
 src/
   api/          Data access — all fetch() calls live here, nowhere else
+  context/      React context — GameContext provides game state to all routes
   hooks/        Logic — all state, derived values, and side effects
   components/   Reusable UI pieces — receive props, emit callbacks
   pages/        Screens — layout only, wires hooks to components
   types.ts      All shared TypeScript types, imported everywhere
-  main.tsx      App entry point, providers
-  App.tsx       Top-level screen router
+  main.tsx      App entry point, providers, and route definitions
 ```
 
 ### The three-layer rule
@@ -88,7 +88,7 @@ Key types:
 |---|---|
 | `Actor` | An actor with `id`, `name`, and `profilePath` |
 | `Movie` | A movie with `id`, `title`, and `year` |
-| `GameState` | The full client-side game state: chain, current actor, visited IDs |
+| `GameState` | The full client-side game state: chain and current actor |
 | `ChainStep` | One link in the chain: an actor and the movie connecting them to the next |
 | `NewGameResponse` | Response from `POST /game` |
 | `ValidateStepResponse` | Response from `POST /game/validate-step` |
@@ -101,7 +101,7 @@ One file per API resource. No file in this folder imports from React.
 
 | File | Exports |
 |---|---|
-| `constants.ts` | `API_BASE_URL`, `TMDB_IMAGE_BASE_URL`, `SEARCH_MIN_LENGTH`, `SEARCH_DEBOUNCE_MS` |
+| `constants.ts` | `API_BASE_URL`, `TMDB_IMAGE_BASE_URL`, `SEARCH_MIN_LENGTH`, `SEARCH_DEBOUNCE_MS`, `getProfileImageUrl()`, `getPosterUrl()` |
 | `game.ts` | `startGame()`, `validateStep()` |
 | `people.ts` | `searchPeople()` |
 | `movies.ts` | `searchMovies()` |
@@ -116,13 +116,14 @@ Every hook wraps either a React Query `useQuery` / `useMutation` or manages pure
 
 | Hook | Wraps | Purpose |
 |---|---|---|
-| `useActorSearch` | `useQuery` | Searches actors by query string; skips queries shorter than `SEARCH_MIN_LENGTH` |
-| `useMovieSearch` | `useQuery` | Searches movies by query string; same short-query guard |
-| `useNewGame` | `useMutation` | Calls `POST /game`; accepts an `onSuccess` callback |
-| `useValidateStep` | `useMutation` | Calls `POST /game/validate-step`; accepts an `onSuccess` callback |
+| `useSearch` | `useQuery` | Generic debounced search; skips queries shorter than `SEARCH_MIN_LENGTH`. Used by `useActorSearch` and `useMovieSearch` |
+| `useActorSearch` | `useSearch` | Searches actors by query string |
+| `useMovieSearch` | `useSearch` | Searches movies by query string |
+| `useNewGame` | `useMutation` | Calls `POST /game`; pass `onSuccess` to `submitNewGame()` at the call site |
+| `useValidateStep` | `useMutation` | Calls `POST /game/validate-step`; pass `onSuccess` to `submitStep()` at the call site |
 | `useGameState` | `useState` | Owns all game state; exposes `initializeGame`, `addStepToChain`, `resetGame` |
 
-The `onSuccess` callback pattern is intentional: the hook owns the API call, the caller owns what to do with the result. This keeps the hooks reusable if they are ever needed in a different context.
+The `onSuccess` callback is passed to the `.mutate()` call (e.g. `submitNewGame(args, { onSuccess })`) rather than to the hook itself. This is the TanStack Query v5 idiomatic pattern and avoids stale-closure bugs.
 
 ---
 
@@ -138,7 +139,11 @@ Reusable building blocks. Each one has a single visual responsibility. None of t
 | `SearchInput` | generic `TResult`, query/results/loading props | Debounced text input with a dropdown results list; data-agnostic |
 | `ChainDisplay` | `startActor`, `chain`, `currentActor` | The visual chain trail: Actor → Movie → Actor → Movie → … |
 
-`SearchInput` is deliberately generic (`TResult extends { id: number }`). The caller provides `renderResult` to control how each row looks. This is what allows the same component to power both actor search and movie search without duplication.
+---
+
+### `src/context/`
+
+`GameContext.tsx` wraps `useGameState` in a React context and exposes it to all routes via `GameProvider`. `GameProvider` is used as the layout route in the router, so any page can call `useGameContext()` to read or update game state without prop-drilling.
 
 ---
 
@@ -146,19 +151,26 @@ Reusable building blocks. Each one has a single visual responsibility. None of t
 
 Top-level screens. These are layout components — they read like a description of what is on screen, not a state machine. All logic is delegated to hooks.
 
-| Page | When shown | Key hook |
+| Page | When shown | Key hooks |
 |---|---|---|
-| `SetupPage` | No game in progress (`gameState === null`) | `useNewGame`, `useActorSearch` |
-| `GamePage` | Game in progress, not yet won | `useValidateStep`, `useActorSearch`, `useMovieSearch`, `useGameState` |
-| `WinPage` | `hasWon === true` | — (display only) |
+| `SetupPage` | No game in progress | `useNewGame`, `useActorSearch`, `useGameContext` |
+| `GamePage` | Game in progress, not yet won | `useValidateStep`, `useActorSearch`, `useMovieSearch`, `useGameContext` |
+| `WinPage` | `hasWon === true` | `useGameContext` (display only) |
 
-Screen transitions are managed in `App.tsx` by inspecting `gameState` and `hasWon` from `useGameState`.
+Screen transitions are managed by React Router. `GameProvider` wraps all routes as a layout route in `main.tsx`, holding game state in context. Each page uses `useNavigate()` to move between routes when state changes.
 
 ---
 
-### `src/App.tsx`
+### `src/main.tsx`
 
-Reads from `useGameState` and renders one of the three pages. It is the only place that decides which screen is active. If the routing ever becomes more complex (e.g. adding a URL-based router), this is the only file that needs to change.
+App entry point. Sets up the `QueryClientProvider` for React Query and defines the React Router route tree:
+
+- `GameProvider` (layout route — holds all game state in context)
+  - `/` → `SetupPage`
+  - `/game` → `GamePage`
+  - `/win` → `WinPage`
+
+This is the only file that defines routes. Adding a new screen means adding a new `{ path, element }` entry here.
 
 ---
 
@@ -175,7 +187,7 @@ Reads from `useGameState` and renders one of the three pages. It is the only pla
 
 1. Create the page component in `src/pages/`. Keep it layout-only.
 2. Add any needed logic to a new or existing hook in `src/hooks/`.
-3. Add the screen transition condition in `App.tsx`.
+3. Add a new route entry in `main.tsx`.
 
 ### Changing the API base URL
 
@@ -185,10 +197,10 @@ Change `API_BASE_URL` in `src/api/constants.ts`. It is the only place this value
 
 ## Design decisions worth knowing
 
-**Why no React Router?** The current three-screen flow is a simple state machine (`null` → game → won), so React Router would add indirection without benefit. If the app grows to need shareable URLs or a back-button history, React Router v7 is already listed as a dependency and can be introduced in `App.tsx` cleanly.
+**Why is React Router used here despite the app being simple?** The three-screen flow maps naturally to three URLs (`/`, `/game`, `/win`), which means the browser back button works correctly, refreshing mid-game behaves predictably, and challenge links can point to `/` with query params without any manual URL parsing. React Router v7 was already a listed dependency.
 
-**Why is game state client-side only?** The back-end API is stateless by design — it validates individual steps but doesn't store sessions. The chain, visited actors, and visited movies all live in `useGameState`. This also means there is nothing to sync or invalidate with React Query.
+**Why is game state in a context instead of prop-drilled?** Now that pages are separate routes (not children of a common `App` component), context is the natural home for shared state. `GameProvider` acts as the layout route and holds `useGameState`, making it accessible to any page via `useGameContext()` without threading props through the router.
 
 **Why does `SearchInput` use `onMouseDown` instead of `onClick` for results?** The input's `onBlur` fires before a click on a dropdown item, which would close the dropdown before the click registers. `onMouseDown` fires first, so the selection goes through correctly.
 
-**Why are `visitedActorIds` and `visitedMovieIds` checked client-side before the API call?** To give instant feedback without a network round-trip. The API enforces the same rules server-side as a safety net — the client check is for UX, not security.
+**Why are `visitedActorIds` and `visitedMovieIds` not stored in `GameState`?** They are fully derivable from `chain` — `visitedActorIds` is `[...chain.map(s => s.actor.id), currentActor.id]` and `visitedMovieIds` is `chain.map(s => s.movie.id)`. Storing derived data separately means keeping it in sync manually, which creates a class of bugs for no benefit. They are computed on-the-fly in `GamePage` immediately before the duplicate check and API call.
