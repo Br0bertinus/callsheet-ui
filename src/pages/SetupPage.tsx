@@ -4,6 +4,7 @@ import { useNewGame } from '../hooks/useNewGame';
 import { SearchInput } from '../components/SearchInput';
 import { ActorCard } from '../components/ActorCard';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { TmdbLogo } from '../components/TmdbLogo';
 import { TMDB_IMAGE_BASE_URL } from '../api/constants';
 import type { Actor, NewGameResponse } from '../types';
 
@@ -17,6 +18,8 @@ export function SetupPage({ onGameStarted }: SetupPageProps) {
 
   const [startActorQuery, setStartActorQuery] = useState('');
   const [targetActorQuery, setTargetActorQuery] = useState('');
+
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const { actorResults: startActorResults, isLoadingActorSearch: isLoadingStartSearch, actorSearchError: startSearchError } =
     useActorSearch(startActorQuery);
@@ -45,7 +48,8 @@ export function SetupPage({ onGameStarted }: SetupPageProps) {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-md p-8 flex flex-col gap-8">
-        <SetupHeader />
+        <SetupHeader onInfoClick={() => setInfoOpen(true)} />
+        {infoOpen && <InfoModal onClose={() => setInfoOpen(false)} />}
 
         <SetupActorPicker
           label="Start Actor"
@@ -86,13 +90,101 @@ export function SetupPage({ onGameStarted }: SetupPageProps) {
   );
 }
 
-function SetupHeader() {
+function SetupHeader({ onInfoClick }: { onInfoClick: () => void }) {
   return (
-    <div className="text-center">
+    <div className="text-center relative">
       <h1 className="text-3xl font-bold text-gray-900">CallSheet</h1>
       <p className="mt-2 text-gray-500">
         Connect two actors through a chain of shared movies.
       </p>
+      <button
+        type="button"
+        onClick={onInfoClick}
+        aria-label="How to play"
+        className="absolute top-0 right-0 text-gray-400 hover:text-indigo-500 transition-colors text-xl leading-none"
+      >
+        &#9432;
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// How to play modal
+// ---------------------------------------------------------------------------
+
+const HOW_TO_PLAY_GOAL =
+  'Connect the Start Actor to the Target Actor through a chain of shared movies \u2014 in as few steps as possible.';
+
+const HOW_TO_PLAY_STEPS = [
+  { icon: '\uD83C\uDFAD', text: 'Choose a Start Actor and a Target Actor.' },
+  { icon: '\uD83D\uDD17', text: 'Each step: pick a movie your current actor appeared in, and a co-star from that movie. That co-star becomes your next link in the chain.' },
+  { icon: '\uD83C\uDFAF', text: 'Keep linking until your chain reaches the Target Actor.' },
+  { icon: '\uD83D\uDEAB', text: 'No actor or movie can appear in your chain more than once.' },
+  { icon: '\uD83D\uDCAA', text: 'Finish in as few steps as you can, then challenge a friend to beat your score!' },
+];
+
+function InfoModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl leading-none"
+        >
+          &times;
+        </button>
+
+        {/* Title */}
+        <h2 className="text-2xl font-bold text-gray-900">How to Play</h2>
+
+        {/* Goal */}
+        <p className="text-gray-600 text-sm leading-relaxed">{HOW_TO_PLAY_GOAL}</p>
+
+        {/* Steps */}
+        <ol className="flex flex-col gap-3">
+          {HOW_TO_PLAY_STEPS.map((step, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="text-xl mt-0.5" aria-hidden="true">{step.icon}</span>
+              <span className="text-gray-700 text-sm leading-relaxed">{step.text}</span>
+            </li>
+          ))}
+        </ol>
+
+        {/* TMDB attribution */}
+        <div className="border-t border-gray-100 pt-4 flex flex-col items-center gap-2">
+          <a
+            href="https://www.themoviedb.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="opacity-80 hover:opacity-100 transition-opacity"
+            aria-label="The Movie Database"
+          >
+            <TmdbLogo />
+          </a>
+          <p className="text-xs text-gray-400 text-center">
+            Actor and film data provided by{' '}
+            <a
+              href="https://www.themoviedb.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-gray-600"
+            >
+              The Movie Database
+            </a>
+            . This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
