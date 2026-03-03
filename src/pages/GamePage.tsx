@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { Navigate, useNavigate } from 'react-router';
+import { useGameContext } from '../context/GameContext';
 import { useValidateStep } from '../hooks/useValidateStep';
 import { useActorSearch } from '../hooks/useActorSearch';
 import { useMovieSearch } from '../hooks/useMovieSearch';
@@ -10,22 +12,26 @@ import { ErrorMessage } from '../components/ErrorMessage';
 import { TMDB_IMAGE_BASE_URL } from '../api/constants';
 import type { Actor, Movie, GameState, ValidateStepResponse } from '../types';
 
-type GamePageProps = {
-  gameState: GameState;
-  onStepAccepted: (nextActor: Actor, connectingMovie: Movie) => void;
-  onResetChain: () => void;
-  onGiveUp: () => void;
-};
+export function GamePage() {
+  const { gameState, hasWon, addStepToChain, resetChain, resetGame } = useGameContext();
+  const navigate = useNavigate();
 
-export function GamePage({ gameState, onStepAccepted, onResetChain, onGiveUp }: GamePageProps) {
+  // Navigate to /win as soon as the win condition is met.
+  useEffect(() => {
+    if (hasWon) navigate('/win');
+  }, [hasWon, navigate]);
+
+  // Guard: if somehow landed here without an active game, go back to setup.
+  if (gameState === null) return <Navigate to="/" replace />;
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-xl mx-auto flex flex-col gap-6">
         <GameHeader
           startActor={gameState.startActor}
           targetActor={gameState.targetActor}
-          onResetChain={onResetChain}
-          onGiveUp={onGiveUp}
+          onResetChain={resetChain}
+          onGiveUp={() => { resetGame(); navigate('/'); }}
         />
 
         <ChainDisplay
@@ -36,7 +42,7 @@ export function GamePage({ gameState, onStepAccepted, onResetChain, onGiveUp }: 
 
         <StepBuilder
           gameState={gameState}
-          onStepAccepted={onStepAccepted}
+          onStepAccepted={addStepToChain}
         />
       </div>
     </div>

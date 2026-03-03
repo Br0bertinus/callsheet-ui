@@ -1,18 +1,46 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
+import { useGameContext } from '../context/GameContext';
 import { useActorSearch } from '../hooks/useActorSearch';
 import { useNewGame } from '../hooks/useNewGame';
+import { startGame } from '../api/game';
 import { SearchInput } from '../components/SearchInput';
 import { ActorCard } from '../components/ActorCard';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TmdbLogo } from '../components/TmdbLogo';
 import { TMDB_IMAGE_BASE_URL } from '../api/constants';
-import type { Actor, NewGameResponse } from '../types';
+import type { Actor } from '../types';
 
-type SetupPageProps = {
-  onGameStarted: (data: NewGameResponse) => void;
-};
+export function SetupPage() {
+  const { initializeGame } = useGameContext();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-export function SetupPage({ onGameStarted }: SetupPageProps) {
+  // Handle challenge link: if URL contains actor IDs, skip setup and jump into the game.
+  const autoStartAttempted = useRef(false);
+  const [isAutoStarting, setIsAutoStarting] = useState(false);
+  const [autoStartError, setAutoStartError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (autoStartAttempted.current) return;
+    autoStartAttempted.current = true;
+
+    const startActorId = Number(searchParams.get('startActorId'));
+    const targetActorId = Number(searchParams.get('targetActorId'));
+    if (!startActorId || !targetActorId) return;
+
+    setIsAutoStarting(true);
+    startGame({ startActorId, targetActorId })
+      .then((data) => {
+        initializeGame(data.startActor, data.targetActor);
+        navigate('/game');
+      })
+      .catch(() => {
+        setAutoStartError('Could not load the shared game. Please set up a new one.');
+        setIsAutoStarting(false);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [startActor, setStartActor] = useState<Actor | null>(null);
   const [targetActor, setTargetActor] = useState<Actor | null>(null);
 
@@ -27,7 +55,10 @@ export function SetupPage({ onGameStarted }: SetupPageProps) {
   const { actorResults: targetActorResults, isLoadingActorSearch: isLoadingTargetSearch, actorSearchError: targetSearchError } =
     useActorSearch(targetActorQuery);
 
-  const { submitNewGame, isStartingGame, newGameError } = useNewGame(onGameStarted);
+  const { submitNewGame, isStartingGame, newGameError } = useNewGame((data) => {
+    initializeGame(data.startActor, data.targetActor);
+    navigate('/game');
+  });
 
   const handleStartActorQueryChange = useCallback((query: string) => {
     setStartActorQuery(query);
@@ -44,6 +75,14 @@ export function SetupPage({ onGameStarted }: SetupPageProps) {
   }
 
   const bothActorsSelected = startActor !== null && targetActor !== null;
+
+  if (isAutoStarting) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <p className="text-gray-500 text-lg animate-pulse">Loading your challenge…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -73,6 +112,7 @@ export function SetupPage({ onGameStarted }: SetupPageProps) {
           onActorClear={() => setTargetActor(null)}
         />
 
+        {autoStartError && <ErrorMessage message={autoStartError} />}
         {newGameError && (
           <ErrorMessage message={newGameError.message} />
         )}
