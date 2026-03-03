@@ -32,8 +32,9 @@ function ShareButton({ gameState }: { gameState: GameState }) {
 
     if (navigator.share) {
       try {
-        // Pass text and url separately so the OS doesn't duplicate the link.
-        await navigator.share({ title: 'Callsheet Challenge', text: message, url });
+        // Combine message and URL into `text` only — passing `url` separately
+        // causes some apps (e.g. Signal) to drop the `text` field entirely.
+        await navigator.share({ title: 'Callsheet Challenge', text: `${message}\n${url}` });
         return;
       } catch {
         // User cancelled or Web Share API unavailable — fall through to clipboard.

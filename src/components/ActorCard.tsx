@@ -1,4 +1,4 @@
-import { TMDB_IMAGE_BASE_URL } from '../api/constants';
+import { getProfileImageUrl } from '../api/constants';
 import type { Actor } from '../types';
 
 type ActorCardProps = {
@@ -7,9 +7,7 @@ type ActorCardProps = {
 };
 
 function ActorPhoto({ actor }: { actor: Actor }) {
-  const imageUrl = actor.profilePath
-    ? `${TMDB_IMAGE_BASE_URL}${actor.profilePath}`
-    : null;
+  const imageUrl = getProfileImageUrl(actor.profilePath);
 
   if (imageUrl) {
     return (

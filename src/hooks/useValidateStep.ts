@@ -11,8 +11,9 @@ type ValidateStepArgs = {
 };
 
 // Calls POST /game/validate-step to check whether the proposed chain link is valid.
-// The caller decides what to do with the result via the onSuccess callback.
-export function useValidateStep(onSuccess: (data: ValidateStepResponse) => void) {
+// Pass { onSuccess } as the second argument to submitStep() at the call site
+// rather than wiring it here — avoids stale-closure bugs in TanStack Query v5.
+export function useValidateStep() {
   const {
     mutate: submitStep,
     isPending: isValidatingStep,
@@ -20,7 +21,6 @@ export function useValidateStep(onSuccess: (data: ValidateStepResponse) => void)
     reset: resetValidateStep,
   } = useMutation({
     mutationFn: (args: ValidateStepArgs) => validateStep(args),
-    onSuccess,
   });
 
   return {

@@ -1,6 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
 import { startGame } from '../api/game';
-import type { NewGameResponse } from '../types';
 
 type StartGameArgs = {
   startActorId: number;
@@ -8,8 +7,9 @@ type StartGameArgs = {
 };
 
 // Calls POST /game to confirm both actors exist and receive their full details.
-// The caller is responsible for handling the onSuccess / onError callbacks.
-export function useNewGame(onSuccess: (data: NewGameResponse) => void) {
+// Pass { onSuccess } as the second argument to submitNewGame() at the call site
+// rather than wiring it here — avoids stale-closure bugs in TanStack Query v5.
+export function useNewGame() {
   const {
     mutate: submitNewGame,
     isPending: isStartingGame,
@@ -17,7 +17,6 @@ export function useNewGame(onSuccess: (data: NewGameResponse) => void) {
   } = useMutation({
     mutationFn: (args: StartGameArgs) =>
       startGame({ startActorId: args.startActorId, targetActorId: args.targetActorId }),
-    onSuccess,
   });
 
   return {
