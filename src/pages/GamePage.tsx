@@ -164,12 +164,16 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
   function handleSubmitStep() {
     if (!nextActor || !connectingMovie) return;
 
+    // Derive visited sets from the chain rather than storing them separately.
+    const visitedActorIds = [...gameState.chain.map((s) => s.actor.id), gameState.currentActor.id];
+    const visitedMovieIds = gameState.chain.map((s) => s.movie.id);
+
     // Client-side duplicate check before hitting the API
-    if (gameState.visitedActorIds.includes(nextActor.id)) {
+    if (visitedActorIds.includes(nextActor.id)) {
       setInvalidStepMessage(`${nextActor.name} has already been used in this chain.`);
       return;
     }
-    if (gameState.visitedMovieIds.includes(connectingMovie.id)) {
+    if (visitedMovieIds.includes(connectingMovie.id)) {
       setInvalidStepMessage(`${connectingMovie.title} has already been used in this chain.`);
       return;
     }
@@ -178,8 +182,8 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
       currentActorId: gameState.currentActor.id,
       nextActorId: nextActor.id,
       movieId: connectingMovie.id,
-      visitedActorIds: gameState.visitedActorIds,
-      visitedMovieIds: gameState.visitedMovieIds,
+      visitedActorIds,
+      visitedMovieIds,
     });
   }
 
