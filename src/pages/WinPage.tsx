@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Navigate, useNavigate } from 'react-router';
+import { useGameContext } from '../context/GameContext';
 import { ActorCard } from '../components/ActorCard';
 import { MovieBadge } from '../components/MovieBadge';
 import type { GameState } from '../types';
@@ -12,7 +14,8 @@ function buildShareUrl(gameState: GameState): string {
     startActorId: String(gameState.startActor.id),
     targetActorId: String(gameState.targetActor.id),
   });
-  return `${window.location.origin}${window.location.pathname}?${params}`;
+  // Always point to / so challenge links work regardless of current route.
+  return `${window.location.origin}/?${params}`;
 }
 
 function buildShareText(gameState: GameState): string {
@@ -53,12 +56,13 @@ function ShareButton({ gameState }: { gameState: GameState }) {
   );
 }
 
-type WinPageProps = {
-  gameState: GameState;
-  onPlayAgain: () => void;
-};
+export function WinPage() {
+  const { gameState, hasWon, resetGame } = useGameContext();
+  const navigate = useNavigate();
 
-export function WinPage({ gameState, onPlayAgain }: WinPageProps) {
+  // Guard: if there's no completed game to display, go back to setup.
+  if (!gameState || !hasWon) return <Navigate to="/" replace />;
+
   const stepCount = gameState.chain.length;
 
   return (
@@ -70,7 +74,7 @@ export function WinPage({ gameState, onPlayAgain }: WinPageProps) {
         <ShareButton gameState={gameState} />
         <button
           type="button"
-          onClick={onPlayAgain}
+          onClick={() => { resetGame(); navigate('/'); }}
           className="w-full py-3 px-6 rounded-xl bg-indigo-600 text-white font-semibold text-lg hover:bg-indigo-700 active:scale-95 transition-all shadow-md hover:shadow-lg"
         >
           🎬 Play Again
