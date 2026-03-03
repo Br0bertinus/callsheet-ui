@@ -10,8 +10,7 @@ type UseGameStateResult = {
   resetGame: () => void;
 };
 
-// Owns all client-side game state: the current actor, the chain built so far,
-// and the lists of visited actors/movies used to enforce no-repeat rules.
+// Owns all client-side game state: the current actor and the chain built so far.
 export function useGameState(): UseGameStateResult {
   const [gameState, setGameState] = useState<GameState | null>(null);
 
@@ -25,8 +24,6 @@ export function useGameState(): UseGameStateResult {
       targetActor,
       currentActor: startActor,
       chain: [],
-      visitedActorIds: [startActor.id],
-      visitedMovieIds: [],
     });
   }, []);
 
@@ -43,8 +40,6 @@ export function useGameState(): UseGameStateResult {
         ...previousState,
         currentActor: nextActor,
         chain: [...previousState.chain, newStep],
-        visitedActorIds: [...previousState.visitedActorIds, nextActor.id],
-        visitedMovieIds: [...previousState.visitedMovieIds, connectingMovie.id],
       };
     });
   }, []);
@@ -56,8 +51,6 @@ export function useGameState(): UseGameStateResult {
         ...prev,
         currentActor: prev.startActor,
         chain: [],
-        visitedActorIds: [prev.startActor.id],
-        visitedMovieIds: [],
       };
     });
   }, []);

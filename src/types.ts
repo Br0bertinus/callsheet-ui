@@ -43,6 +43,7 @@ export type GameState = {
   currentActor: Actor;
   // Completed steps in the chain so far
   chain: ChainStep[];
-  visitedActorIds: number[];
-  visitedMovieIds: number[];
+  // visitedActorIds and visitedMovieIds are intentionally omitted — derive them
+  // from chain when needed: actors = [...chain.map(s => s.actor.id), currentActor.id]
+  //                          movies = chain.map(s => s.movie.id)
 };
