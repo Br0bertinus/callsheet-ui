@@ -91,7 +91,7 @@ export function SetupPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-md p-8 flex flex-col gap-8">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-md p-4 sm:p-8 flex flex-col gap-8">
         <SetupHeader onInfoClick={() => setInfoOpen(true)} />
         {infoOpen && <InfoModal onClose={() => setInfoOpen(false)} />}
 
@@ -126,7 +126,7 @@ export function SetupPage() {
           type="button"
           onClick={handleStartGameClick}
           disabled={!bothActorsSelected || isStartingGame}
-          className="w-full py-3 px-6 rounded-lg bg-indigo-600 text-white font-semibold text-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full py-3 px-6 rounded-lg bg-indigo-600 text-white font-semibold text-lg hover:bg-indigo-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {isStartingGame ? 'Starting…' : 'Start Game'}
         </button>
@@ -146,7 +146,7 @@ function SetupHeader({ onInfoClick }: { onInfoClick: () => void }) {
         type="button"
         onClick={onInfoClick}
         aria-label="How to play"
-        className="absolute top-0 right-0 text-gray-400 hover:text-indigo-500 transition-colors text-xl leading-none"
+        className="absolute top-0 right-0 p-2 -mr-2 -mt-2 text-gray-400 hover:text-indigo-500 active:text-indigo-600 transition-colors text-xl leading-none"
       >
         &#9432;
       </button>
@@ -276,7 +276,7 @@ function SetupActorPicker({
           <button
             type="button"
             onClick={handleClear}
-            className="text-sm text-gray-400 hover:text-gray-600"
+            className="p-2 -mr-2 text-gray-400 hover:text-gray-600 active:text-gray-800"
             aria-label={`Clear ${label}`}
           >
             ✕

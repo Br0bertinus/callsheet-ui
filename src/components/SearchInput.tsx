@@ -24,6 +24,7 @@ export function SearchInput<TResult extends { id: number }>({
   const [inputValue, setInputValue] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLUListElement>(null);
 
   // Debounce: wait for the user to stop typing before firing the query
   useEffect(() => {
@@ -34,16 +35,27 @@ export function SearchInput<TResult extends { id: number }>({
     return () => clearTimeout(timer);
   }, [inputValue, onDebouncedQueryChange]);
 
-  // Close dropdown when clicking outside the component
+  // Close dropdown when clicking/tapping outside the component
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside as EventListener);
+    document.addEventListener('touchstart', handleClickOutside as EventListener);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside as EventListener);
+      document.removeEventListener('touchstart', handleClickOutside as EventListener);
+    };
   }, []);
+
+  // Scroll the dropdown into view when it opens so the virtual keyboard doesn't hide it
+  useEffect(() => {
+    if (isDropdownOpen && dropdownRef.current) {
+      dropdownRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [isDropdownOpen, isLoading, results.length]);
 
   function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     setInputValue(event.target.value);
@@ -66,11 +78,17 @@ export function SearchInput<TResult extends { id: number }>({
         onChange={handleInputChange}
         onFocus={() => setIsDropdownOpen(true)}
         placeholder={placeholder}
+        inputMode="search"
+        enterKeyHint="search"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
       />
 
       {shouldShowDropdown && (
-        <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <ul ref={dropdownRef} className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {isLoading && (
             <li className="px-4 py-3 text-sm text-gray-500">Searching…</li>
           )}

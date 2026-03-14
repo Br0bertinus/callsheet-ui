@@ -4,9 +4,10 @@ import type { Actor } from '../types';
 type ActorCardProps = {
   actor: Actor;
   isHighlighted?: boolean;
+  isCompact?: boolean;
 };
 
-function ActorPhoto({ actor }: { actor: Actor }) {
+function ActorPhoto({ actor, isCompact = false }: { actor: Actor; isCompact?: boolean }) {
   const imageUrl = getProfileImageUrl(actor.profilePath);
 
   if (imageUrl) {
@@ -14,16 +15,16 @@ function ActorPhoto({ actor }: { actor: Actor }) {
       <img
         src={imageUrl}
         alt={actor.name}
-        className="w-16 h-16 rounded-full object-cover"
+        className={isCompact ? 'w-10 h-10 rounded-full object-cover' : 'w-16 h-16 rounded-full object-cover'}
       />
     );
   }
 
   // Placeholder silhouette when no profile photo is available
   return (
-    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center">
+    <div className={`${isCompact ? 'w-10 h-10' : 'w-16 h-16'} rounded-full bg-gray-200 flex items-center justify-center`}>
       <svg
-        className="w-10 h-10 text-gray-400"
+        className={`${isCompact ? 'w-6 h-6' : 'w-10 h-10'} text-gray-400`}
         fill="currentColor"
         viewBox="0 0 24 24"
         aria-hidden="true"
@@ -34,7 +35,7 @@ function ActorPhoto({ actor }: { actor: Actor }) {
   );
 }
 
-export function ActorCard({ actor, isHighlighted = false }: ActorCardProps) {
+export function ActorCard({ actor, isHighlighted = false, isCompact = false }: ActorCardProps) {
   return (
     <div
       className={`flex items-center gap-3 p-3 rounded-lg border ${
@@ -43,7 +44,7 @@ export function ActorCard({ actor, isHighlighted = false }: ActorCardProps) {
           : 'border-gray-200 bg-white'
       }`}
     >
-      <ActorPhoto actor={actor} />
+      <ActorPhoto actor={actor} isCompact={isCompact} />
       <span className="font-medium text-gray-900">{actor.name}</span>
     </div>
   );
