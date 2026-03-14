@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import { useGameContext } from '../context/GameContext';
 import { useValidateStep } from '../hooks/useValidateStep';
@@ -61,23 +61,27 @@ type GameHeaderProps = {
 function GameHeader({ startActor, targetActor, onResetChain, onGiveUp }: GameHeaderProps) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="flex items-center justify-between gap-4 p-4">
-        <ActorCard actor={startActor} />
-        <span className="text-2xl text-gray-400">→</span>
-        <ActorCard actor={targetActor} />
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4">
+        <div className="w-full sm:flex-1">
+          <ActorCard actor={startActor} />
+        </div>
+        <span className="text-2xl text-gray-400 rotate-90 sm:rotate-0">→</span>
+        <div className="w-full sm:flex-1">
+          <ActorCard actor={targetActor} />
+        </div>
       </div>
       <div className="flex border-t border-gray-100 divide-x divide-gray-100">
         <button
           type="button"
           onClick={onResetChain}
-          className="flex-1 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-colors"
+          className="flex-1 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-indigo-600 active:bg-gray-100 transition-colors"
         >
           ↺ Reset chain
         </button>
         <button
           type="button"
           onClick={onGiveUp}
-          className="flex-1 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-red-500 transition-colors"
+          className="flex-1 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-red-500 active:bg-gray-100 transition-colors"
         >
           ← New game
         </button>
@@ -183,10 +187,20 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
     );
   }
 
+  const stepBuilderRef = useRef<HTMLDivElement>(null);
+
+  // Scroll the step builder into view after each accepted step so it's not
+  // buried under the growing chain history on mobile.
+  useEffect(() => {
+    if (gameState.chain.length > 0 && stepBuilderRef.current) {
+      stepBuilderRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [gameState.chain.length]);
+
   const bothSelectionsMade = nextActor !== null && connectingMovie !== null;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-5">
+    <div ref={stepBuilderRef} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col gap-5">
       <p className="text-sm text-gray-500">
         Current actor:{' '}
         <span className="font-semibold text-gray-800">{gameState.currentActor.name}</span>
@@ -229,7 +243,7 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
         type="button"
         onClick={handleSubmitStep}
         disabled={!bothSelectionsMade || isValidatingStep}
-        className="w-full py-2 px-4 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="w-full py-2 px-4 rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
       >
         {isValidatingStep ? 'Checking…' : 'Submit Step'}
       </button>
@@ -267,7 +281,7 @@ function StepActorPicker({
           <button
             type="button"
             onClick={onActorClear}
-            className="text-sm text-gray-400 hover:text-gray-600"
+            className="p-2 -mr-2 text-gray-400 hover:text-gray-600 active:text-gray-800"
             aria-label="Clear actor"
           >
             ✕
@@ -318,7 +332,7 @@ function StepMoviePicker({
           <button
             type="button"
             onClick={onMovieClear}
-            className="text-sm text-gray-400 hover:text-gray-600"
+            className="p-2 -mr-2 text-gray-400 hover:text-gray-600 active:text-gray-800"
             aria-label="Clear movie"
           >
             ✕

@@ -18,6 +18,7 @@ export function ChainDisplay({ startActor, chain, currentActor }: ChainDisplayPr
       <ActorCard
         actor={startActor}
         isHighlighted={isChainEmpty}
+        isCompact={!isChainEmpty}
       />
 
       {chain.map((step, index) => {
@@ -52,7 +53,7 @@ function ChainLink({ step, isNextActorCurrent, nextActor }: ChainLinkProps) {
       <ChainConnector />
       <MovieBadge movie={step.movie} />
       <ChainConnector />
-      {!isNextActorCurrent && <ActorCard actor={nextActor} />}
+      {!isNextActorCurrent && <ActorCard actor={nextActor} isCompact />}
     </>
   );
 }
