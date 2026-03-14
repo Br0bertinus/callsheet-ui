@@ -6,6 +6,8 @@ export type Actor = {
   name: string;
   // Partial TMDB path — prepend TMDB_IMAGE_BASE_URL to display the image
   profilePath: string;
+  // TMDB popularity score — higher means more popular, lower means rarer
+  popularity: number;
 };
 
 export type Movie = {
@@ -14,6 +16,8 @@ export type Movie = {
   year: number;
   // Partial TMDB path — prepend TMDB_POSTER_BASE_URL to display the poster
   posterPath?: string;
+  // TMDB popularity score — higher means more popular, lower means rarer
+  popularity: number;
 };
 
 // Response from POST /game

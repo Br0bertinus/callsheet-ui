@@ -4,6 +4,7 @@ import { useGameContext } from '../context/GameContext';
 import { ActorCard } from '../components/ActorCard';
 import { MovieBadge } from '../components/MovieBadge';
 import type { GameState } from '../types';
+import { calcObscurityScore } from '../scoring';
 
 // ---------------------------------------------------------------------------
 // Share helpers
@@ -20,7 +21,8 @@ function buildShareUrl(gameState: GameState): string {
 
 function buildShareText(gameState: GameState): string {
   const steps = gameState.chain.length;
-  return `I connected ${gameState.startActor.name} → ${gameState.targetActor.name} in ${steps} ${steps === 1 ? 'step' : 'steps'}! Can you beat me? 🎬`;
+  const obscurity = Math.round(calcObscurityScore(gameState));
+  return `I connected ${gameState.startActor.name} → ${gameState.targetActor.name} in ${steps} ${steps === 1 ? 'step' : 'steps'} with an obscurity score of ${obscurity}! Can you find a more obscure path? 🎬`;
 }
 
 function ShareButton({ gameState }: { gameState: GameState }) {
@@ -65,12 +67,14 @@ export function WinPage() {
   if (!gameState || !hasWon) return <Navigate to="/" replace />;
 
   const stepCount = gameState.chain.length;
+  const rarityScore = Math.round(calcObscurityScore(gameState));
 
   return (
     <div className="min-h-screen bg-linear-to-b from-indigo-50 via-white to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-8 relative overflow-hidden">
         <Confetti />
-        <WinHeader stepCount={stepCount} />
+        <WinHeader stepCount={stepCount} rarityScore={rarityScore} />
+        <RarityBreakdown gameState={gameState} />
         <CompletedChain gameState={gameState} />
         <ShareButton gameState={gameState} />
         <button
@@ -81,6 +85,80 @@ export function WinPage() {
           🎬 Play Again
         </button>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Rarity breakdown
+// ---------------------------------------------------------------------------
+
+function RarityBreakdown({ gameState }: { gameState: GameState }) {
+  const [open, setOpen] = useState(false);
+
+  // Intermediate actors only — seed actors (start/target) are excluded from scoring.
+  const actors = gameState.chain.slice(1).map(s => s.actor);
+  const movies = gameState.chain.map(s => s.movie);
+
+  const actorSum = actors.reduce((sum, a) => sum + a.popularity, 0);
+  const movieSum = movies.reduce((sum, m) => sum + m.popularity, 0);
+
+  // Interleaved items in display order, seeds shown but visually marked as excluded.
+  type ChainItem =
+    | { kind: 'actor'; name: string; popularity: number; seed: boolean }
+    | { kind: 'movie'; name: string; popularity: number };
+
+  const items: ChainItem[] = [];
+  gameState.chain.forEach((step, index) => {
+    items.push({ kind: 'actor', name: step.actor.name, popularity: step.actor.popularity, seed: index === 0 });
+    items.push({ kind: 'movie', name: `${step.movie.title} (${step.movie.year})`, popularity: step.movie.popularity });
+  });
+  items.push({ kind: 'actor', name: gameState.targetActor.name, popularity: gameState.targetActor.popularity, seed: true });
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="text-sm text-violet-500 hover:text-violet-700 underline underline-offset-2 transition-colors"
+      >
+        {open ? 'Hide breakdown' : '💎 See score breakdown'}
+      </button>
+
+      {open && (
+        <div className="w-full rounded-xl border border-violet-100 bg-violet-50 overflow-hidden text-sm animate-slide-up">
+          {/* Subtotals */}
+          <div className="grid grid-cols-2 divide-x divide-violet-100 border-b border-violet-100">
+            <div className="flex flex-col items-center py-3 gap-0.5">
+              <span className="text-violet-400 text-xs uppercase tracking-wide font-medium">🎭 Actors</span>
+              <span className="text-violet-800 font-bold tabular-nums text-base">{actorSum.toFixed(1)}</span>
+              <span className="text-violet-300 text-xs">seeds excluded</span>
+            </div>
+            <div className="flex flex-col items-center py-3 gap-0.5">
+              <span className="text-violet-400 text-xs uppercase tracking-wide font-medium">🎬 Movies</span>
+              <span className="text-violet-800 font-bold tabular-nums text-base">{movieSum.toFixed(1)}</span>
+            </div>
+          </div>
+
+          {/* Per-item rows */}
+          <ul className="divide-y divide-violet-100">
+            {items.map((item, i) => (
+              <li key={i} className={`flex items-center justify-between px-4 py-2 gap-2 ${item.kind === 'actor' && item.seed ? 'opacity-40' : ''}`}>
+                <span className="flex items-center gap-2 text-gray-700 min-w-0">
+                  <span className="shrink-0">{item.kind === 'actor' ? '🎭' : '🎬'}</span>
+                  <span className="truncate">{item.name}</span>
+                  {item.kind === 'actor' && item.seed && (
+                    <span className="text-xs text-gray-400 shrink-0">seed</span>
+                  )}
+                </span>
+                <span className={`tabular-nums font-semibold shrink-0 ${item.kind === 'actor' && item.seed ? 'text-gray-400' : 'text-violet-700'}`}>
+                  {item.popularity.toFixed(1)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
@@ -145,7 +223,7 @@ function scoreBadge(steps: number): { label: string; classes: string } {
   return             { label: '🎉 Completed',       classes: 'bg-gray-100   text-gray-700   ring-gray-300'   };
 }
 
-function WinHeader({ stepCount }: { stepCount: number }) {
+function WinHeader({ stepCount, rarityScore }: { stepCount: number; rarityScore: number }) {
   const badge = scoreBadge(stepCount);
   return (
     <div className="text-center flex flex-col items-center gap-3">
@@ -164,6 +242,15 @@ function WinHeader({ stepCount }: { stepCount: number }) {
         >
           {stepCount} {stepCount === 1 ? 'step' : 'steps'}
         </span>
+      </div>
+      <div
+        className="flex items-center gap-2 mt-1 px-4 py-2 rounded-xl bg-violet-50 ring-1 ring-violet-200 animate-pop-in"
+        style={{ animationDelay: '250ms' }}
+        title="Sum of TMDB popularity scores for every chosen actor and movie in your chain (seed actors excluded) — lower means a more obscure path!"
+      >
+        <span className="text-violet-500 text-sm">💎 Obscurity score</span>
+        <span className="text-violet-800 font-bold tabular-nums">{rarityScore.toLocaleString()}</span>
+        <span className="text-violet-400 text-xs">(lower = more obscure)</span>
       </div>
     </div>
   );

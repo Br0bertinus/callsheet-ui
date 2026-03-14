@@ -159,14 +159,15 @@ function SetupHeader({ onInfoClick }: { onInfoClick: () => void }) {
 // ---------------------------------------------------------------------------
 
 const HOW_TO_PLAY_GOAL =
-  'Connect the Start Actor to the Target Actor through a chain of shared movies \u2014 in as few steps as possible.';
+  'Connect the Start Actor to the Target Actor through a chain of shared movies. Try to finish in as few steps as possible \u2014 or find the most obscure path you can.';
 
 const HOW_TO_PLAY_STEPS = [
   { icon: '\uD83C\uDFAD', text: 'Choose a Start Actor and a Target Actor.' },
   { icon: '\uD83D\uDD17', text: 'Each step: pick a movie your current actor appeared in, and a co-star from that movie. That co-star becomes your next link in the chain.' },
   { icon: '\uD83C\uDFAF', text: 'Keep linking until your chain reaches the Target Actor.' },
   { icon: '\uD83D\uDEAB', text: 'No actor or movie can appear in your chain more than once.' },
-  { icon: '\uD83D\uDCAA', text: 'Finish in as few steps as you can, then challenge a friend to beat your score!' },
+  { icon: '\uD83D\uDCAA', text: 'Finish in as few steps as you can \u2014 then challenge a friend to beat your score!' },
+  { icon: '\uD83D\uDC8E', text: 'Every finished chain also gets an Obscurity Score \u2014 the sum of TMDB popularity for each actor and movie you chose. Lower is better: the more obscure your path, the more bragging rights you earn.' },
 ];
 
 function InfoModal({ onClose }: { onClose: () => void }) {
