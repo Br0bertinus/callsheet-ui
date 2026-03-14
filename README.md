@@ -14,6 +14,13 @@ A *Six Degrees of Kevin Bacon*-style game where two players connect any two acto
    - The **movie** that connects the current actor to that next actor
 3. **Win** — The game is won when you successfully add the target actor to the end of the chain.
 
+### Scoring
+
+There are two ways to compete once you've finished:
+
+- **Fewest steps** — the classic goal. Shortest chain wins.
+- **Obscurity Score** — the sum of TMDB popularity scores for every actor and movie *you chose* (the fixed start/end actors are excluded). Lower is better — the more obscure your path through the graph, the lower your score. Compare with friends to see who has the deeper film knowledge.
+
 ### Rules
 
 - Every actor and every movie in the chain must be **unique** — you cannot reuse someone already in the chain.
