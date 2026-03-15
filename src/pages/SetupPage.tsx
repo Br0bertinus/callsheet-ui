@@ -9,6 +9,7 @@ import { SearchInput } from '../components/SearchInput';
 import { ActorCard } from '../components/ActorCard';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { TmdbLogo } from '../components/TmdbLogo';
+import { CalendarIcon } from '../components/CalendarIcon';
 import { getProfileImageUrl } from '../api/constants';
 import type { Actor } from '../types';
 
@@ -164,7 +165,10 @@ function DailyChallengeButton({ alreadyPlayed, onPlay }: DailyChallengeButtonPro
       className="w-full flex items-center justify-between gap-3 py-4 px-5 rounded-xl bg-indigo-50 border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-100 active:scale-95 transition-all group"
     >
       <div className="text-left">
-        <p className="font-semibold text-indigo-700 text-base group-hover:text-indigo-900">📅 Daily Challenge</p>
+        <p className="flex items-center gap-2 font-semibold text-indigo-700 text-base group-hover:text-indigo-900">
+          <CalendarIcon size="sm" />
+          Daily Challenge
+        </p>
         <p className="text-xs text-indigo-400 mt-0.5">
           {alreadyPlayed ? 'Already completed today · View your results' : 'Same puzzle for everyone · resets at midnight'}
         </p>
@@ -238,7 +242,10 @@ function InfoModal({ onClose }: { onClose: () => void }) {
 
         {/* Daily Challenge */}
         <div className="flex flex-col gap-3">
-          <h3 className="text-sm font-bold text-indigo-600 uppercase tracking-wide">📅 Daily Challenge</h3>
+          <h3 className="flex items-center gap-1.5 text-sm font-bold text-indigo-600 uppercase tracking-wide">
+            <CalendarIcon size="sm" />
+            Daily Challenge
+          </h3>
           <ol className="flex flex-col gap-3">
             {DAILY_STEPS.map((step, i) => (
               <li key={i} className="flex items-start gap-3">

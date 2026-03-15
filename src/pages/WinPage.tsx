@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router';
 import { useGameContext } from '../context/GameContext';
 import { ActorCard } from '../components/ActorCard';
 import { MovieBadge } from '../components/MovieBadge';
+import { CalendarIcon } from '../components/CalendarIcon';
 import type { GameState } from '../types';
 import { calcObscurityScore } from '../scoring';
 import { saveTodayResult } from '../hooks/useDailyChallenge';
@@ -99,7 +100,8 @@ export function WinPage() {
         {gameState.isDailyChallenge && gameState.challengeDate && (
           <div className="flex items-center justify-center gap-2 -mb-4">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-700 ring-1 ring-indigo-300 animate-pop-in">
-              📅 Daily Challenge · {gameState.challengeDate}
+              <CalendarIcon size="sm" />
+              Daily Challenge · {gameState.challengeDate}
             </span>
           </div>
         )}

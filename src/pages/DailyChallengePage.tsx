@@ -5,6 +5,7 @@ import { useDailyChallenge, getTodayResult, getTodayDateString } from '../hooks/
 import { ActorCard } from '../components/ActorCard';
 import { MovieBadge } from '../components/MovieBadge';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { CalendarIcon } from '../components/CalendarIcon';
 import type { DailyChallengeResult } from '../types';
 
 export function DailyChallengePage() {
@@ -76,7 +77,7 @@ function AlreadyPlayedScreen({ result, onPlayRandom }: AlreadyPlayedScreenProps)
     <div className="min-h-screen bg-linear-to-b from-indigo-50 via-white to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-6">
         <div className="text-center">
-          <div className="text-4xl mb-2">📅</div>
+          <div className="flex justify-center mb-2"><CalendarIcon size="lg" /></div>
           <h1 className="text-2xl font-bold text-gray-900">Daily Challenge</h1>
           <p className="text-sm text-indigo-500 font-medium mt-1">{dateLabel}</p>
         </div>
