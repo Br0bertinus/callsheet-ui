@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import { useGameContext } from '../context/GameContext';
 import { ActorCard } from '../components/ActorCard';
 import { MovieBadge } from '../components/MovieBadge';
 import type { GameState } from '../types';
 import { calcObscurityScore } from '../scoring';
+import { saveTodayResult } from '../hooks/useDailyChallenge';
 
 // ---------------------------------------------------------------------------
 // Share helpers
 // ---------------------------------------------------------------------------
 
 function buildShareUrl(gameState: GameState): string {
+  // For daily challenges, share the /daily route — no actor IDs needed since
+  // the server derives the pair from the date.
+  if (gameState.isDailyChallenge) {
+    return `${window.location.origin}/daily`;
+  }
   const params = new URLSearchParams({
     startActorId: String(gameState.startActor.id),
     targetActorId: String(gameState.targetActor.id),
@@ -22,6 +28,9 @@ function buildShareUrl(gameState: GameState): string {
 function buildShareText(gameState: GameState): string {
   const steps = gameState.chain.length;
   const obscurity = Math.round(calcObscurityScore(gameState));
+  if (gameState.isDailyChallenge && gameState.challengeDate) {
+    return `📅 Callsheet Daily Challenge (${gameState.challengeDate})\nI connected ${gameState.startActor.name} → ${gameState.targetActor.name} in ${steps} ${steps === 1 ? 'step' : 'steps'} with an obscurity score of ${obscurity}! 🎬`;
+  }
   return `I connected ${gameState.startActor.name} → ${gameState.targetActor.name} in ${steps} ${steps === 1 ? 'step' : 'steps'} with an obscurity score of ${obscurity}! Can you find a more obscure path? 🎬`;
 }
 
@@ -48,13 +57,17 @@ function ShareButton({ gameState }: { gameState: GameState }) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  const label = gameState.isDailyChallenge
+    ? (copied ? '✅ Copied to clipboard!' : '📣 Share Your Result')
+    : (copied ? '✅ Copied to clipboard!' : '💪 Challenge a Friend');
+
   return (
     <button
       type="button"
       onClick={handleShare}
       className="w-full py-3 px-6 rounded-xl bg-white text-indigo-600 font-semibold text-lg border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-50 active:scale-95 transition-all shadow-sm"
     >
-      {copied ? '✅ Copied to clipboard!' : '💪 Challenge a Friend'}
+      {label}
     </button>
   );
 }
@@ -62,6 +75,16 @@ function ShareButton({ gameState }: { gameState: GameState }) {
 export function WinPage() {
   const { gameState, hasWon, resetGame } = useGameContext();
   const navigate = useNavigate();
+
+  // Persist the daily challenge result once when the win screen mounts.
+  // Must be called unconditionally (before any early return) to follow Rules of Hooks.
+  useEffect(() => {
+    if (gameState?.isDailyChallenge && hasWon) {
+      const score = Math.round(calcObscurityScore(gameState));
+      saveTodayResult(gameState, score);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Guard: if there's no completed game to display, go back to setup.
   if (!gameState || !hasWon) return <Navigate to="/" replace />;
@@ -73,6 +96,13 @@ export function WinPage() {
     <div className="min-h-screen bg-linear-to-b from-indigo-50 via-white to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-8 relative overflow-hidden">
         <Confetti />
+        {gameState.isDailyChallenge && gameState.challengeDate && (
+          <div className="flex items-center justify-center gap-2 -mb-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-indigo-100 text-indigo-700 ring-1 ring-indigo-300 animate-pop-in">
+              📅 Daily Challenge · {gameState.challengeDate}
+            </span>
+          </div>
+        )}
         <WinHeader stepCount={stepCount} rarityScore={rarityScore} />
         <RarityBreakdown gameState={gameState} />
         <CompletedChain gameState={gameState} />

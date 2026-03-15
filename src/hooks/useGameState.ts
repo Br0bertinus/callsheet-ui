@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
+import { getTodayDateString } from './useDailyChallenge';
 import type { Actor, Movie, GameState, ChainStep } from '../types';
 
 type UseGameStateResult = {
   gameState: GameState | null;
   hasWon: boolean;
-  initializeGame: (startActor: Actor, targetActor: Actor) => void;
+  initializeGame: (startActor: Actor, targetActor: Actor, isDailyChallenge?: boolean) => void;
   addStepToChain: (nextActor: Actor, connectingMovie: Movie) => void;
   resetChain: () => void;
   resetGame: () => void;
@@ -18,12 +19,14 @@ export function useGameState(): UseGameStateResult {
     gameState !== null &&
     gameState.currentActor.id === gameState.targetActor.id;
 
-  const initializeGame = useCallback((startActor: Actor, targetActor: Actor) => {
+  const initializeGame = useCallback((startActor: Actor, targetActor: Actor, isDailyChallenge = false) => {
     setGameState({
       startActor,
       targetActor,
       currentActor: startActor,
       chain: [],
+      isDailyChallenge,
+      challengeDate: isDailyChallenge ? getTodayDateString() : undefined,
     });
   }, []);
 

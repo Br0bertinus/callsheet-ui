@@ -6,7 +6,7 @@ import type { Actor, Movie, GameState } from '../types';
 type GameContextValue = {
   gameState: GameState | null;
   hasWon: boolean;
-  initializeGame: (startActor: Actor, targetActor: Actor) => void;
+  initializeGame: (startActor: Actor, targetActor: Actor, isDailyChallenge?: boolean) => void;
   addStepToChain: (nextActor: Actor, connectingMovie: Movie) => void;
   resetChain: () => void;
   resetGame: () => void;

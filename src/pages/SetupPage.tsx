@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useGameContext } from '../context/GameContext';
 import { useActorSearch } from '../hooks/useActorSearch';
 import { useNewGame } from '../hooks/useNewGame';
+import { getTodayResult } from '../hooks/useDailyChallenge';
 import { startGame } from '../api/game';
 import { SearchInput } from '../components/SearchInput';
 import { ActorCard } from '../components/ActorCard';
@@ -95,6 +96,17 @@ export function SetupPage() {
         <SetupHeader onInfoClick={() => setInfoOpen(true)} />
         {infoOpen && <InfoModal onClose={() => setInfoOpen(false)} />}
 
+        <DailyChallengeButton
+          alreadyPlayed={getTodayResult() !== null}
+          onPlay={() => navigate('/daily')}
+        />
+
+        <div className="flex items-center gap-3">
+          <hr className="flex-1 border-gray-200" />
+          <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">or pick your own</span>
+          <hr className="flex-1 border-gray-200" />
+        </div>
+
         <SetupActorPicker
           label="Start Actor"
           selectedActor={startActor}
@@ -135,6 +147,33 @@ export function SetupPage() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Daily Challenge button
+// ---------------------------------------------------------------------------
+
+type DailyChallengeButtonProps = {
+  alreadyPlayed: boolean;
+  onPlay: () => void;
+};
+
+function DailyChallengeButton({ alreadyPlayed, onPlay }: DailyChallengeButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onPlay}
+      className="w-full flex items-center justify-between gap-3 py-4 px-5 rounded-xl bg-indigo-50 border-2 border-indigo-200 hover:border-indigo-400 hover:bg-indigo-100 active:scale-95 transition-all group"
+    >
+      <div className="text-left">
+        <p className="font-semibold text-indigo-700 text-base group-hover:text-indigo-900">📅 Daily Challenge</p>
+        <p className="text-xs text-indigo-400 mt-0.5">
+          {alreadyPlayed ? 'Already completed today · View your results' : 'Same puzzle for everyone · resets at midnight'}
+        </p>
+      </div>
+      <span className="text-indigo-300 text-xl group-hover:text-indigo-500 transition-colors">→</span>
+    </button>
+  );
+}
+
 function SetupHeader({ onInfoClick }: { onInfoClick: () => void }) {
   return (
     <div className="text-center relative">
@@ -158,17 +197,21 @@ function SetupHeader({ onInfoClick }: { onInfoClick: () => void }) {
 // How to play modal
 // ---------------------------------------------------------------------------
 
-const HOW_TO_PLAY_GOAL =
-  'Connect the Start Actor to the Target Actor through a chain of shared movies. Try to finish in as few steps as possible \u2014 or find the most obscure path you can.';
-
-const HOW_TO_PLAY_STEPS = [
-  { icon: '\uD83C\uDFAD', text: 'Choose a Start Actor and a Target Actor.' },
-  { icon: '\uD83D\uDD17', text: 'Each step: pick a movie your current actor appeared in, and a co-star from that movie. That co-star becomes your next link in the chain.' },
-  { icon: '\uD83C\uDFAF', text: 'Keep linking until your chain reaches the Target Actor.' },
-  { icon: '\uD83D\uDEAB', text: 'No actor or movie can appear in your chain more than once.' },
-  { icon: '\uD83D\uDCAA', text: 'Finish in as few steps as you can \u2014 then challenge a friend to beat your score!' },
-  { icon: '\uD83D\uDC8E', text: 'Every finished chain also gets an Obscurity Score \u2014 the sum of TMDB popularity for each actor and movie you chose. Lower is better: the more obscure your path, the more bragging rights you earn.' },
+const DAILY_STEPS = [
+  { icon: '📅', text: 'Every day a new pair of actors is chosen — the same pair for every player worldwide.' },
+  { icon: '🔗', text: 'Build a chain connecting them: pick a movie your current actor appeared in, then name a co-star from that movie. Repeat until you reach the target.' },
+  { icon: '🚫', text: 'No actor or movie can appear in your chain more than once.' },
+  { icon: '💾', text: 'Your result is saved once you finish — come back and share it without spoiling the chain for others.' },
 ];
+
+const RANDOM_STEPS = [
+  { icon: '🎭', text: 'Search for any two actors to use as the Start and Target.' },
+  { icon: '🔗', text: 'Build the chain the same way: current actor → shared movie → co-star → repeat.' },
+  { icon: '🏁', text: 'Land on the Target Actor to win. Try to do it in as few steps as possible.' },
+  { icon: '💪', text: 'Share your chain to challenge a friend to find a shorter — or more obscure — path.' },
+];
+
+const SCORING_NOTE = 'Every finished chain earns an Obscurity Score — the sum of TMDB popularity for each actor and movie you chose (start and end actors excluded). Lower is better: the more obscure your path, the more bragging rights you earn.';
 
 function InfoModal({ onClose }: { onClose: () => void }) {
   return (
@@ -177,7 +220,7 @@ function InfoModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6"
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -193,18 +236,41 @@ function InfoModal({ onClose }: { onClose: () => void }) {
         {/* Title */}
         <h2 className="text-2xl font-bold text-gray-900">How to Play</h2>
 
-        {/* Goal */}
-        <p className="text-gray-600 text-sm leading-relaxed">{HOW_TO_PLAY_GOAL}</p>
+        {/* Daily Challenge */}
+        <div className="flex flex-col gap-3">
+          <h3 className="text-sm font-bold text-indigo-600 uppercase tracking-wide">📅 Daily Challenge</h3>
+          <ol className="flex flex-col gap-3">
+            {DAILY_STEPS.map((step, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="text-xl mt-0.5" aria-hidden="true">{step.icon}</span>
+                <span className="text-gray-700 text-sm leading-relaxed">{step.text}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
 
-        {/* Steps */}
-        <ol className="flex flex-col gap-3">
-          {HOW_TO_PLAY_STEPS.map((step, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <span className="text-xl mt-0.5" aria-hidden="true">{step.icon}</span>
-              <span className="text-gray-700 text-sm leading-relaxed">{step.text}</span>
-            </li>
-          ))}
-        </ol>
+        <hr className="border-gray-100" />
+
+        {/* Random Game */}
+        <div className="flex flex-col gap-3">
+          <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">🎲 Random Game</h3>
+          <ol className="flex flex-col gap-3">
+            {RANDOM_STEPS.map((step, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="text-xl mt-0.5" aria-hidden="true">{step.icon}</span>
+                <span className="text-gray-700 text-sm leading-relaxed">{step.text}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <hr className="border-gray-100" />
+
+        {/* Scoring */}
+        <div className="flex items-start gap-3">
+          <span className="text-xl mt-0.5" aria-hidden="true">💎</span>
+          <p className="text-gray-600 text-sm leading-relaxed">{SCORING_NOTE}</p>
+        </div>
 
         {/* TMDB attribution */}
         <div className="border-t border-gray-100 pt-4 flex flex-col items-center gap-2">
