@@ -50,4 +50,21 @@ export type GameState = {
   // visitedActorIds and visitedMovieIds are intentionally omitted — derive them
   // from chain when needed: actors = [...chain.map(s => s.actor.id), currentActor.id]
   //                          movies = chain.map(s => s.movie.id)
+  // Set to true when this game was started from the daily challenge
+  isDailyChallenge?: boolean;
+  // ISO date string (YYYY-MM-DD) identifying which day's challenge this is
+  challengeDate?: string;
+};
+
+// Stored in localStorage after the user completes a daily challenge.
+// Used to show the "already played today" screen on subsequent visits.
+export type DailyChallengeResult = {
+  // ISO date string matching the challenge that was completed (YYYY-MM-DD)
+  date: string;
+  steps: number;
+  score: number;
+  // Full chain preserved so it can be displayed on the already-played screen.
+  startActor: Actor;
+  targetActor: Actor;
+  chain: ChainStep[];
 };

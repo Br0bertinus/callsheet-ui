@@ -6,6 +6,7 @@ import { GameProvider } from './context/GameContext';
 import { SetupPage } from './pages/SetupPage';
 import { GamePage } from './pages/GamePage';
 import { WinPage } from './pages/WinPage';
+import { DailyChallengePage } from './pages/DailyChallengePage';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -23,9 +24,10 @@ const router = createBrowserRouter([
   {
     element: <GameProvider />,
     children: [
-      { path: '/',     element: <SetupPage /> },
-      { path: '/game', element: <GamePage /> },
-      { path: '/win',  element: <WinPage /> },
+      { path: '/',       element: <SetupPage /> },
+      { path: '/daily',  element: <DailyChallengePage /> },
+      { path: '/game',   element: <GamePage /> },
+      { path: '/win',    element: <WinPage /> },
     ],
   },
 ]);

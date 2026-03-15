@@ -41,3 +41,16 @@ export async function validateStep(body: ValidateStepBody): Promise<ValidateStep
 
   return response.json() as Promise<ValidateStepResponse>;
 }
+
+// Returns today's fixed start/target actor pair from the server.
+// The server derives the pair deterministically from the current date,
+// so every user gets the same challenge for a given day.
+export async function getDailyChallenge(): Promise<NewGameResponse> {
+  const response = await fetch(`${API_BASE_URL}/game/daily`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load daily challenge: ${response.statusText}`);
+  }
+
+  return response.json() as Promise<NewGameResponse>;
+}

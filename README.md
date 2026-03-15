@@ -8,11 +8,17 @@ A *Six Degrees of Kevin Bacon*-style game where two players connect any two acto
 
 ### How to play
 
-1. **Setup** — Search for two actors (one per player). Once both are selected, click **Start Game** to begin.
-2. **Build the chain** — Starting from Actor A, each turn you must name:
+There are two ways to start a game:
+
+- **Daily Challenge** — Every day a new fixed pair of actors is chosen for everyone. The pair is the same for all players on a given calendar day, resets at midnight UTC, and your result is saved so you can share it without spoilers.
+- **Random Game** — Pick any two actors yourself and build your own chain.
+
+Once a game starts the rules are the same either way:
+
+1. **Build the chain** — Starting from Actor A, each turn you must name:
    - The **next actor** in the chain
    - The **movie** that connects the current actor to that next actor
-3. **Win** — The game is won when you successfully add the target actor to the end of the chain.
+2. **Win** — The game is won when you successfully add the target actor to the end of the chain.
 
 ### Scoring
 
@@ -95,10 +101,11 @@ Key types:
 |---|---|
 | `Actor` | An actor with `id`, `name`, and `profilePath` |
 | `Movie` | A movie with `id`, `title`, and `year` |
-| `GameState` | The full client-side game state: chain and current actor |
+| `GameState` | The full client-side game state: chain, current actor, and optional `isDailyChallenge` / `challengeDate` flags |
 | `ChainStep` | One link in the chain: an actor and the movie connecting them to the next |
-| `NewGameResponse` | Response from `POST /game` |
+| `NewGameResponse` | Response from `POST /game` and `GET /game/daily` |
 | `ValidateStepResponse` | Response from `POST /game/validate-step` |
+| `DailyChallengeResult` | The user's completed daily result persisted to localStorage: `date`, `steps`, `score` |
 
 ---
 
@@ -109,9 +116,11 @@ One file per API resource. No file in this folder imports from React.
 | File | Exports |
 |---|---|
 | `constants.ts` | `API_BASE_URL`, `TMDB_IMAGE_BASE_URL`, `SEARCH_MIN_LENGTH`, `SEARCH_DEBOUNCE_MS`, `getProfileImageUrl()`, `getPosterUrl()` |
-| `game.ts` | `startGame()`, `validateStep()` |
+| `game.ts` | `startGame()`, `validateStep()`, `getDailyChallenge()` |
 | `people.ts` | `searchPeople()` |
 | `movies.ts` | `searchMovies()` |
+
+`getDailyChallenge()` calls `GET /api/game/daily` and returns a `NewGameResponse` — the same shape as `startGame()`. No request body is needed; the server derives the pair from the current UTC date.
 
 **Adding a new endpoint:** create or add to the relevant resource file, type the request body and response separately, throw a descriptive `Error` on non-OK responses.
 
@@ -128,7 +137,8 @@ Every hook wraps either a React Query `useQuery` / `useMutation` or manages pure
 | `useMovieSearch` | `useSearch` | Searches movies by query string |
 | `useNewGame` | `useMutation` | Calls `POST /game`; pass `onSuccess` to `submitNewGame()` at the call site |
 | `useValidateStep` | `useMutation` | Calls `POST /game/validate-step`; pass `onSuccess` to `submitStep()` at the call site |
-| `useGameState` | `useState` | Owns all game state; exposes `initializeGame`, `addStepToChain`, `resetGame` |
+| `useGameState` | `useState` | Owns all game state; exposes `initializeGame`, `addStepToChain`, `resetGame`. Accepts an optional `isDailyChallenge` flag |
+| `useDailyChallenge` | `useQuery` | Fetches today's actor pair from `GET /api/game/daily` (cached 10 min). Also exports `getTodayResult()` and `saveTodayResult()` for reading/writing the completed result to localStorage |
 
 The `onSuccess` callback is passed to the `.mutate()` call (e.g. `submitNewGame(args, { onSuccess })`) rather than to the hook itself. This is the TanStack Query v5 idiomatic pattern and avoids stale-closure bugs.
 
@@ -160,9 +170,10 @@ Top-level screens. These are layout components — they read like a description 
 
 | Page | When shown | Key hooks |
 |---|---|---|
-| `SetupPage` | No game in progress | `useNewGame`, `useActorSearch`, `useGameContext` |
+| `SetupPage` | No game in progress | `useNewGame`, `useActorSearch`, `useGameContext`. Shows a **Daily Challenge** button at the top that routes to `/daily` |
+| `DailyChallengePage` | Navigating to `/daily` | `useDailyChallenge`, `useGameContext`. Fetches today's pair, initializes game state with `isDailyChallenge: true`, and immediately redirects to `/game`. If the user has already finished today's challenge, shows an "Already completed" summary screen instead |
 | `GamePage` | Game in progress, not yet won | `useValidateStep`, `useActorSearch`, `useMovieSearch`, `useGameContext` |
-| `WinPage` | `hasWon === true` | `useGameContext` (display only) |
+| `WinPage` | `hasWon === true` | `useGameContext`. When `isDailyChallenge` is set, persists the result to localStorage via `saveTodayResult()`, shows the challenge date, and shares a spoiler-light result (no actor IDs) |
 
 Screen transitions are managed by React Router. `GameProvider` wraps all routes as a layout route in `main.tsx`, holding game state in context. Each page uses `useNavigate()` to move between routes when state changes.
 
@@ -174,6 +185,7 @@ App entry point. Sets up the `QueryClientProvider` for React Query and defines t
 
 - `GameProvider` (layout route — holds all game state in context)
   - `/` → `SetupPage`
+  - `/daily` → `DailyChallengePage`
   - `/game` → `GamePage`
   - `/win` → `WinPage`
 
@@ -211,3 +223,7 @@ Change `API_BASE_URL` in `src/api/constants.ts`. It is the only place this value
 **Why does `SearchInput` use `onMouseDown` instead of `onClick` for results?** The input's `onBlur` fires before a click on a dropdown item, which would close the dropdown before the click registers. `onMouseDown` fires first, so the selection goes through correctly.
 
 **Why are `visitedActorIds` and `visitedMovieIds` not stored in `GameState`?** They are fully derivable from `chain` — `visitedActorIds` is `[...chain.map(s => s.actor.id), currentActor.id]` and `visitedMovieIds` is `chain.map(s => s.movie.id)`. Storing derived data separately means keeping it in sync manually, which creates a class of bugs for no benefit. They are computed on-the-fly in `GamePage` immediately before the duplicate check and API call.
+
+**Why is the daily result stored in localStorage instead of a backend?** The app has no user accounts, so localStorage is the simplest durable store available. The stored value is keyed by date (`callsheet:dailyResult`), which means stale entries from previous days are automatically ignored — no cleanup needed. If the data is cleared, the user just plays again; nothing is lost on the server side.
+
+**Why does `DailyChallengePage` redirect immediately to `/game` instead of having its own play UI?** The daily challenge is just a regular game with a pre-set pair — sharing a separate gameplay implementation would create a divergence that's hard to maintain. Redirecting to `/game` after setting game state means daily users and random users get exactly the same in-game experience for free.
