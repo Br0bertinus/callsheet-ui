@@ -211,6 +211,8 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
         isLoading={isLoadingActorSearch}
         searchError={actorSearchError}
         selectedActor={nextActor}
+        currentActor={gameState.currentActor}
+        targetActor={gameState.targetActor}
         onQueryChange={handleActorQueryChange}
         onActorSelect={handleActorSelect}
         onActorClear={handleClearActor}
@@ -221,6 +223,8 @@ function StepBuilder({ gameState, onStepAccepted }: StepBuilderProps) {
         isLoading={isLoadingMovieSearch}
         searchError={movieSearchError}
         selectedMovie={connectingMovie}
+        currentActor={gameState.currentActor}
+        nextActor={nextActor}
         onQueryChange={handleMovieQueryChange}
         onMovieSelect={handleMovieSelect}
         onMovieClear={handleClearMovie}
@@ -256,6 +260,8 @@ type StepActorPickerProps = {
   isLoading: boolean;
   searchError: Error | null;
   selectedActor: Actor | null;
+  currentActor: Actor;
+  targetActor: Actor;
   onQueryChange: (query: string) => void;
   onActorSelect: (actor: Actor) => void;
   onActorClear: () => void;
@@ -266,10 +272,25 @@ function StepActorPicker({
   isLoading,
   searchError,
   selectedActor,
+  currentActor,
+  targetActor,
   onQueryChange,
   onActorSelect,
   onActorClear,
 }: StepActorPickerProps) {
+  const contextLabel = (
+    <div className="flex flex-col gap-2 text-sm">
+      <div className="flex items-center gap-3">
+        <span className="text-gray-400 w-20 shrink-0">Currently:</span>
+        <ActorCard actor={currentActor} isCompact />
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-gray-400 w-20 shrink-0">Target:</span>
+        <ActorCard actor={targetActor} isCompact />
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-semibold text-gray-700">Next Actor</label>
@@ -290,6 +311,7 @@ function StepActorPicker({
       ) : (
         <SearchInput
           placeholder="Search for next actor…"
+          contextLabel={contextLabel}
           onDebouncedQueryChange={onQueryChange}
           results={results}
           isLoading={isLoading}
@@ -307,6 +329,8 @@ type StepMoviePickerProps = {
   isLoading: boolean;
   searchError: Error | null;
   selectedMovie: Movie | null;
+  currentActor: Actor;
+  nextActor: Actor | null;
   onQueryChange: (query: string) => void;
   onMovieSelect: (movie: Movie) => void;
   onMovieClear: () => void;
@@ -317,10 +341,28 @@ function StepMoviePicker({
   isLoading,
   searchError,
   selectedMovie,
+  currentActor,
+  nextActor,
   onQueryChange,
   onMovieSelect,
   onMovieClear,
 }: StepMoviePickerProps) {
+  const contextLabel = nextActor ? (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs text-gray-500">Pick a movie that connects:</p>
+      <div className="flex items-center gap-2">
+        <ActorCard actor={currentActor} isCompact />
+        <span className="text-gray-400">→</span>
+        <ActorCard actor={nextActor} isCompact />
+      </div>
+    </div>
+  ) : (
+    <div className="flex flex-col gap-1">
+      <p className="text-xs text-gray-500">Currently playing as:</p>
+      <ActorCard actor={currentActor} isCompact />
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-semibold text-gray-700">Connecting Movie</label>
@@ -341,6 +383,7 @@ function StepMoviePicker({
       ) : (
         <SearchInput
           placeholder="Search for connecting movie…"
+          contextLabel={contextLabel}
           onDebouncedQueryChange={onQueryChange}
           results={results}
           isLoading={isLoading}

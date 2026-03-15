@@ -153,7 +153,7 @@ Reusable building blocks. Each one has a single visual responsibility. None of t
 | `ErrorMessage` | `message` | Consistent error display, used everywhere an error needs to be shown |
 | `ActorCard` | `actor`, `isHighlighted?` | Actor photo + name tile; shows a silhouette placeholder when `profilePath` is empty |
 | `MovieBadge` | `movie` | Pill badge showing movie title and year |
-| `SearchInput` | generic `TResult`, query/results/loading props | Debounced text input with a dropdown results list; data-agnostic |
+| `SearchInput` | generic `TResult`, query/results/loading props, optional `contextLabel` | Debounced search with two render paths: a standard inline dropdown on pointer/mouse devices and a full-screen portal overlay on touch devices. The `contextLabel` prop (rendered inside the mobile overlay) lets callers show context about what the user is searching for — e.g. the current and target actors while searching for a next actor. |
 | `ChainDisplay` | `startActor`, `chain`, `currentActor` | The visual chain trail: Actor → Movie → Actor → Movie → … |
 
 ---
@@ -219,6 +219,8 @@ Change `API_BASE_URL` in `src/api/constants.ts`. It is the only place this value
 **Why is React Router used here despite the app being simple?** The three-screen flow maps naturally to three URLs (`/`, `/game`, `/win`), which means the browser back button works correctly, refreshing mid-game behaves predictably, and challenge links can point to `/` with query params without any manual URL parsing. React Router v7 was already a listed dependency.
 
 **Why is game state in a context instead of prop-drilled?** Now that pages are separate routes (not children of a common `App` component), context is the natural home for shared state. `GameProvider` acts as the layout route and holds `useGameState`, making it accessible to any page via `useGameContext()` without threading props through the router.
+
+**Why does `SearchInput` use a full-screen portal overlay on mobile instead of an inline dropdown?** iOS Safari scrolls the page whenever the document height changes while a keyboard is open. An absolute-positioned dropdown appearing below a focused input changes layout height, which triggers this scroll and causes the page to jump. Rendering the results inside a `position: fixed` portal detaches them from the document layout entirely, so no height change ever occurs. `document.body.style.overflow = 'hidden'` is set while the overlay is open to prevent rubber-band overscroll from revealing the page behind. Desktop (pointer/mouse) devices retain the original inline dropdown because they don't have a software keyboard and don't exhibit this issue. The split is detected via the `(pointer: coarse)` media query rather than viewport width, so tablets also receive the mobile path.
 
 **Why does `SearchInput` use `onMouseDown` instead of `onClick` for results?** The input's `onBlur` fires before a click on a dropdown item, which would close the dropdown before the click registers. `onMouseDown` fires first, so the selection goes through correctly.
 

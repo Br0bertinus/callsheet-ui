@@ -358,6 +358,9 @@ function SetupActorPicker({
       ) : (
         <SearchInput
           placeholder={`Search for ${label.toLowerCase()}…`}
+          contextLabel={
+            <p className="text-sm font-semibold text-gray-700">{label}</p>
+          }
           onDebouncedQueryChange={onQueryChange}
           results={searchResults}
           isLoading={isLoadingSearch}
