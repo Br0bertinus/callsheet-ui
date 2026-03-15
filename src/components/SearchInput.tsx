@@ -50,12 +50,14 @@ export function SearchInput<TResult extends { id: number }>({
     };
   }, []);
 
-  // Scroll the dropdown into view when it opens so the virtual keyboard doesn't hide it
+  // Scroll the dropdown into view when it first opens so the virtual keyboard doesn't hide it.
+  // Intentionally only depends on isDropdownOpen — we don't want to re-scroll every time
+  // results load, which would cause the input to bounce up and down mid-search.
   useEffect(() => {
     if (isDropdownOpen && dropdownRef.current) {
       dropdownRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
-  }, [isDropdownOpen, isLoading, results.length]);
+  }, [isDropdownOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     setInputValue(event.target.value);
